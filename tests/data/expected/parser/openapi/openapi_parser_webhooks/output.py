@@ -17,9 +17,9 @@ class PetUpdate(BaseModel):
     tag: Optional[str] = None
 
 
-class NewPetPostRequest(BaseModel):
+class PetNewPostRequest(BaseModel):
     __root__: Pet
 
 
-class PetUpdatePostRequest(BaseModel):
+class PetUpdatedPostRequest(BaseModel):
     __root__: PetUpdate

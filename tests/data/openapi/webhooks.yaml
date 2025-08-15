@@ -3,7 +3,7 @@ info:
   title: Webhook Test API
   version: 1.0.0
 webhooks:
-  newPet:
+  pet.new:
     post:
       requestBody:
         description: Information about a new pet in the system
@@ -14,7 +14,7 @@ webhooks:
       responses:
         '200':
           description: Return a 200 status to indicate that the data was received successfully
-  petUpdate:
+  pet.updated:
     post:
       requestBody:
         description: Information about an updated pet
