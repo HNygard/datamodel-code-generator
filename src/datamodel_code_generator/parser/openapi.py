@@ -364,7 +364,7 @@ class OpenAPIParser(JsonSchemaParser):
                 data_types[media_type] = self.parse_schema(name, media_obj.schema_, [*path, media_type])
             elif media_obj.schema_ is not None:
                 # Check if we're parsing a webhook - webhooks should create wrapper models
-                is_webhook = any("#/webhooks" in str(p) for p in path)
+                is_webhook = "#/webhooks" in path
                 
                 if is_webhook:
                     # Create a root model that wraps the referenced type for webhooks
