@@ -363,7 +363,27 @@ class OpenAPIParser(JsonSchemaParser):
             if isinstance(media_obj.schema_, JsonSchemaObject):
                 data_types[media_type] = self.parse_schema(name, media_obj.schema_, [*path, media_type])
             elif media_obj.schema_ is not None:
-                data_types[media_type] = self.get_ref_data_type(media_obj.schema_.ref)
+                # Create a root model that wraps the referenced type
+                ref_data_type = self.get_ref_data_type(media_obj.schema_.ref)
+                reference = self.model_resolver.add([*path, media_type], name, loaded=True, class_name=True)
+                
+                field = self.data_model_field_type(
+                    data_type=ref_data_type,
+                    required=True,
+                    alias=None,
+                )
+                
+                root_model = self.data_model_root_type(
+                    reference=reference,
+                    fields=[field],
+                    custom_base_class=self.base_class,
+                    custom_template_dir=self.custom_template_dir,
+                    extra_template_data=self.extra_template_data,
+                    path=self.current_source_path,
+                )
+                
+                self.results.append(root_model)
+                data_types[media_type] = self.data_type(reference=reference)
         return data_types
 
     def parse_responses(
