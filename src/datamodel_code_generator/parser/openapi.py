@@ -349,6 +349,29 @@ class OpenAPIParser(JsonSchemaParser):
         self.parse_ref(obj, path)
         return data_type
 
+    def _create_webhook_wrapper_model(self, name: str, ref: str, path: list[str], media_type: str) -> DataType:
+        """Create a root model that wraps a referenced type for webhook operations."""
+        ref_data_type = self.get_ref_data_type(ref)
+        reference = self.model_resolver.add([*path, media_type], name, loaded=True, class_name=True)
+        
+        field = self.data_model_field_type(
+            data_type=ref_data_type,
+            required=True,
+            alias=None,
+        )
+        
+        root_model = self.data_model_root_type(
+            reference=reference,
+            fields=[field],
+            custom_base_class=self.base_class,
+            custom_template_dir=self.custom_template_dir,
+            extra_template_data=self.extra_template_data,
+            path=self.current_source_path,
+        )
+        
+        self.results.append(root_model)
+        return self.data_type(reference=reference)
+
     def parse_request_body(
         self,
         name: str,
@@ -364,32 +387,9 @@ class OpenAPIParser(JsonSchemaParser):
                 data_types[media_type] = self.parse_schema(name, media_obj.schema_, [*path, media_type])
             elif media_obj.schema_ is not None:
                 # Check if we're parsing a webhook - webhooks should create wrapper models
-                is_webhook = "#/webhooks" in path
-                
-                if is_webhook:
-                    # Create a root model that wraps the referenced type for webhooks
-                    ref_data_type = self.get_ref_data_type(media_obj.schema_.ref)
-                    reference = self.model_resolver.add([*path, media_type], name, loaded=True, class_name=True)
-                    
-                    field = self.data_model_field_type(
-                        data_type=ref_data_type,
-                        required=True,
-                        alias=None,
-                    )
-                    
-                    root_model = self.data_model_root_type(
-                        reference=reference,
-                        fields=[field],
-                        custom_base_class=self.base_class,
-                        custom_template_dir=self.custom_template_dir,
-                        extra_template_data=self.extra_template_data,
-                        path=self.current_source_path,
-                    )
-                    
-                    self.results.append(root_model)
-                    data_types[media_type] = self.data_type(reference=reference)
+                if "#/webhooks" in path:
+                    data_types[media_type] = self._create_webhook_wrapper_model(name, media_obj.schema_.ref, path, media_type)
                 else:
-                    # For regular operations, just return the referenced type
                     data_types[media_type] = self.get_ref_data_type(media_obj.schema_.ref)
         return data_types
 
